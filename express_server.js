@@ -7,7 +7,7 @@ const PORT = 8080;
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
+  "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
 app.use(express.urlencoded({ extended: true }));
@@ -41,6 +41,14 @@ app.post('/urls/:id/delete', (req,res)=>{
   delete urlDatabase[id];
   res.redirect('/urls')
   // console.log(id);
+})
+
+
+// Edit
+app.post('/urls/:id/edit', (req,res)=>{
+  const id  = req.params.id;
+  urlDatabase[id] = req.body.longURL
+ res.redirect('/urls')
 })
 
 app.get("/urls/new", (req, res) => {
