@@ -15,7 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
-
+// Create
 app.post("/urls", (req, res) => {
   const id = generateRandomString();
   const { longURL } = req.body;
@@ -32,7 +32,15 @@ app.get("/urls.json", (req, res) => {
 app.get('/u/:id', (req,res) => {
   const id = req.params.id;
   const longURL = urlDatabase[id]
-  res.redirect(longURL)
+  res.redirect(longURL);
+})
+
+// Delete
+app.post('/urls/:id/delete', (req,res)=>{
+  const id  = req.params.id;
+  delete urlDatabase[id];
+  res.redirect('/urls')
+  // console.log(id);
 })
 
 app.get("/urls/new", (req, res) => {
