@@ -1,6 +1,9 @@
 const express = require("express");
 const { generateRandomString } = require("./generateRandomString");
 const cookieParser = require("cookie-parser");
+const bcrypt = require("bcryptjs");
+
+
 const app = express();
 const PORT = 8080;
 
@@ -15,30 +18,32 @@ const urlDatabase = {
   B4n8Q1: {
     id: "B4n8Q1",
     longURL: "http://www.google.com",
-    userId: "3R4v8z",
+    userId: "2x4R3H",
   },
   x2yL3k: {
     id: "x2yL3k",
     longURL: "http://www.gov.cic.ca",
-    userId: "3R4v8z",
+    userId: "2x4R3H",
   },
 };
 
 const userDatabase = {
-  "3R4v8z": {
-    id: "3R4v8z",
-    email: "orjiakor@gmail.com",
-    password: "ojiwe12",
+  '2x4R3H': {
+    id: '2x4R3H',
+    email: 'limi@gmail.com',
+    password: '$2a$10$Qgvur2CRHoJTT2B7uUPYc.HwtQSRs3FjAoptJq8HMhzt9f0SPwI8G'
   },
-  "5K7i1X": {
-    id: "5K7i1X",
-    email: "ekene@gmail.com",
-    password: "111212",
-  },
+  '1p1m4T': {
+    id: '1p1m4T',
+    email: 'GregOil@gmail.com',
+    password: '$2a$10$EQWyNFEb0/eSCXrFHQDKY.GZdwVd4xk7provwhr0KVMtI0.xZrGU2'
+  }
 };
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
@@ -53,8 +58,10 @@ const checkUser = function(email, obj) {
 };
 
 const authenticateUser = function (email, password, obj) {
+  
   for (const key in obj) {
-    if (obj[key].email === email && obj[key].password === password) {
+    const hashedPassword = obj[key].password;
+    if (obj[key].email === email && bcrypt.compareSync(password, hashedPassword)) {
       return obj[key];
     }
   }
@@ -130,6 +137,7 @@ app.get("/register", (req, res) => {
 // Collect New User Data
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
+  const hashedPassword = bcrypt.hashSync(password,10);
   if (!email) {
     return res.sendStatus(400);
   }
@@ -142,7 +150,8 @@ app.post("/register", (req, res) => {
   }
 
   const id = generateRandomString();
-  userDatabase[id] = { id, email, password };
+  userDatabase[id] = { id, email, password:hashedPassword };
+  console.log(hashedPassword);
   res.cookie("user_id", id);
   res.redirect("/urls");
   res.json(userDatabase);
@@ -178,6 +187,7 @@ app.get("/login", (req, res) => {
   const id = req.params.id;
   const templateVars = { user: userDatabase[id] };
   res.render("login", templateVars);
+  console.log(userDatabase)
 });
 
 app.post("/login", (req, res) => {
