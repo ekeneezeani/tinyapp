@@ -7,8 +7,14 @@ const PORT = 8080;
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+  "b2xVn2": {
+    longURL:"http://www.lighthouselabs.ca",
+    userId: "x4R5j2"
+  },
+  "9sm5xK": {
+    longURL:"http://www.google.com",
+    userId: "B4n8Q1"
+  }
 };
 
 const userDatabase = {
@@ -44,12 +50,13 @@ const authenticateUser = function (email, password, obj) {
 };
 // Create
 app.post("/urls", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.sendStatus(403);
+  }
   const id = generateRandomString();
   const { longURL } = req.body;
-  urlDatabase[id] = longURL;
+  urlDatabase[id].longURL = longURL;
   res.redirect(`/urls/${id}`);
-  // console.log(req.body);
-  // res.send("Ok");
 });
 
 app.get("/urls.json", (req, res) => {
@@ -58,7 +65,11 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
-  const longURL = urlDatabase[id];
+  const longURL = urlDatabase[id].longURL;
+  if (!longURL) {
+    return res.sendStatus(400);
+  }
+
   res.redirect(longURL);
 });
 
@@ -73,7 +84,7 @@ app.post("/urls/:id/delete", (req, res) => {
 // Edit
 app.post("/urls/:id/edit", (req, res) => {
   const id = req.params.id;
-  urlDatabase[id] = req.body.longURL;
+  urlDatabase[id].longURL = req.body.longURL;
   res.redirect("/urls");
 });
 
@@ -81,6 +92,9 @@ app.post("/urls/:id/edit", (req, res) => {
 app.get("/register", (req, res) => {
   const id = req.cookies["user_id"];
   const templateVars = { user: userDatabase[id] };
+  if (id) {
+    return res.redirect("/urls");
+  }
   res.render("user_registeration", templateVars);
 });
 
@@ -108,6 +122,9 @@ app.post("/register", (req, res) => {
 app.get("/urls/new", (req, res) => {
   const id = req.cookies["user_id"];
   const templateVars = { user: userDatabase[id] };
+  if (!id) {
+    return res.redirect("/login");
+  }
   res.render("urls_new", templateVars);
 });
 
@@ -116,7 +133,7 @@ app.get("/urls/:id", (req, res) => {
   const userId = req.cookies["user_id"];
   const templateVars = {
     id,
-    longURL: urlDatabase[id],
+    longURL: urlDatabase[id].longURL,
     user: userDatabase[userId],
   };
   res.render("urls_show", templateVars);
