@@ -7,7 +7,7 @@ const {checkUser, authenticateUser, getUrlByUser} = require("./helper")
 
 
 const app = express();
-const PORT = 8080;
+const PORT = 8081;
 
 app.set("view engine", "ejs");
 
@@ -217,10 +217,8 @@ app.post("/logout", (req, res) => {
 app.get("/urls", (req, res) => {
   // console.log("username", req.cookies["username"]);
   const id = req.session.user_id;
+  console.log("Testing ID",id);
   if (!id) {
-    // <html><body>Hello <b>World</b></body></html>\n
-    // LOGIN OR REGISTER IF <a href ='/login'></a> YOU DONT ALREADY HAVE AN ACCOUNT
-
     return res.send(" <html><body><a href='/login'>LOGIN</a> OR <a href='/register'>REGISTER</a> IF YOU DON NOT ALREADY HAVE AN ACCOUNT </body></html>\n");
   }
   if (!userDatabase) {
