@@ -7,14 +7,21 @@ const PORT = 8080;
 app.set("view engine", "ejs");
 
 const urlDatabase = {
-  "b2xVn2": {
-    longURL:"http://www.lighthouselabs.ca",
-    userId: "x4R5j2"
+  b2xVn2: {
+    id: "b2xVn2",
+    longURL: "http://www.lighthouselabs.ca",
+    userId: "x4R5j2",
   },
-  "9sm5xK": {
-    longURL:"http://www.google.com",
-    userId: "B4n8Q1"
-  }
+  B4n8Q1: {
+    id: "B4n8Q1",
+    longURL: "http://www.google.com",
+    userId: "3R4v8z",
+  },
+  x2yL3k: {
+    id: "x2yL3k",
+    longURL: "http://www.gov.cic.ca",
+    userId: "3R4v8z",
+  },
 };
 
 const userDatabase = {
@@ -22,6 +29,11 @@ const userDatabase = {
     id: "3R4v8z",
     email: "orjiakor@gmail.com",
     password: "ojiwe12",
+  },
+  "5K7i1X": {
+    id: "5K7i1X",
+    email: "ekene@gmail.com",
+    password: "111212",
   },
 };
 
@@ -31,7 +43,7 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-const checkUser = function (email, obj) {
+const checkUser = function(email, obj) {
   for (const key in obj) {
     if (obj[key].email === email) {
       return obj[key];
@@ -48,6 +60,23 @@ const authenticateUser = function (email, password, obj) {
   }
   return null;
 };
+
+const getUrlByUser = function (userId) {
+  const userUrls = {};
+  for (const key in urlDatabase) {
+    if (urlDatabase[key].userId === userId) {
+      const { id, longURL, userId } = urlDatabase[key];
+      userUrls[key] = { id, longURL, userId };
+    }
+  }
+  if (userUrls !== {}) {
+    return userUrls
+  }
+
+  return null;
+
+};
+
 // Create
 app.post("/urls", (req, res) => {
   if (!req.cookies["user_id"]) {
@@ -55,7 +84,7 @@ app.post("/urls", (req, res) => {
   }
   const id = generateRandomString();
   const { longURL } = req.body;
-  urlDatabase[id].longURL = longURL;
+  urlDatabase[id] ={id, longURL, userId: req.cookies["user_id"]}
   res.redirect(`/urls/${id}`);
 });
 
@@ -65,10 +94,10 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
-  const longURL = urlDatabase[id].longURL;
-  if (!longURL) {
+  if (!Object.keys(urlDatabase).includes(id)) {
     return res.sendStatus(400);
   }
+  const longURL = urlDatabase[id].longURL;
 
   res.redirect(longURL);
 });
@@ -121,7 +150,8 @@ app.post("/register", (req, res) => {
 
 app.get("/urls/new", (req, res) => {
   const id = req.cookies["user_id"];
-  const templateVars = { user: userDatabase[id] };
+  const currentUser = userDatabase[id];
+  const templateVars = { user: currentUser };
   if (!id) {
     return res.redirect("/login");
   }
@@ -133,9 +163,9 @@ app.get("/urls/:id", (req, res) => {
   const userId = req.cookies["user_id"];
   const templateVars = {
     id,
-    longURL: urlDatabase[id].longURL,
-    user: userDatabase[userId],
+    user: urlDatabase[id],
   };
+
   res.render("urls_show", templateVars);
 });
 
@@ -169,8 +199,14 @@ app.post("/logout", (req, res) => {
 app.get("/urls", (req, res) => {
   // console.log("username", req.cookies["username"]);
   const id = req.cookies["user_id"];
+  if (!id) {
+    return res.send("LOGIN OR REGISTER IF YOU DONT ALREADY HAVE AN ACCOUNT");
+  }
+  if (!userDatabase) {
+    return res.send("You have not created any URLs");
+  }
   const templateVars = {
-    urls: urlDatabase,
+    urls: getUrlByUser(id),
     user: userDatabase[id],
   };
   res.render("urls_index", templateVars);
