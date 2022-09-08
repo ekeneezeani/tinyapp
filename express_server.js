@@ -1,13 +1,24 @@
+const cookieSession = require("cookie-session");
 const express = require("express");
 const { generateRandomString } = require("./generateRandomString");
-const cookieParser = require("cookie-parser");
+// const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
+const {checkUser, authenticateUser, getUrlByUser} = require("./helper")
 
 
 const app = express();
 const PORT = 8080;
 
 app.set("view engine", "ejs");
+
+app.use(express.urlencoded({ extended: true }));
+app.use(
+  cookieSession({
+    name: "session",
+    keys: ['key1', 'key2'],
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  })
+);
 
 const urlDatabase = {
   b2xVn2: {
@@ -28,70 +39,67 @@ const urlDatabase = {
 };
 
 const userDatabase = {
-  '2x4R3H': {
-    id: '2x4R3H',
-    email: 'limi@gmail.com',
-    password: '$2a$10$Qgvur2CRHoJTT2B7uUPYc.HwtQSRs3FjAoptJq8HMhzt9f0SPwI8G'
+  "2x4R3H": {
+    id: "2x4R3H",
+    email: "limi@gmail.com",
+    password: "$2a$10$Qgvur2CRHoJTT2B7uUPYc.HwtQSRs3FjAoptJq8HMhzt9f0SPwI8G",
   },
-  '1p1m4T': {
-    id: '1p1m4T',
-    email: 'GregOil@gmail.com',
-    password: '$2a$10$EQWyNFEb0/eSCXrFHQDKY.GZdwVd4xk7provwhr0KVMtI0.xZrGU2'
-  }
+  "1p1m4T": {
+    id: "1p1m4T",
+    email: "GregOil@gmail.com",
+    password: "$2a$10$EQWyNFEb0/eSCXrFHQDKY.GZdwVd4xk7provwhr0KVMtI0.xZrGU2",
+  },
 };
-
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
 
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-const checkUser = function(email, obj) {
-  for (const key in obj) {
-    if (obj[key].email === email) {
-      return obj[key];
-    }
-  }
-  return null;
-};
+// const checkUser = function (email, obj) {
+//   for (const key in obj) {
+//     if (obj[key].email === email) {
+//       return obj[key];
+//     }
+//   }
+//   return null;
+// };
 
-const authenticateUser = function (email, password, obj) {
-  
-  for (const key in obj) {
-    const hashedPassword = obj[key].password;
-    if (obj[key].email === email && bcrypt.compareSync(password, hashedPassword)) {
-      return obj[key];
-    }
-  }
-  return null;
-};
+// const authenticateUser = function(email, password, obj) {
+//   for (const key in obj) {
+//     const hashedPassword = obj[key].password;
+//     if (
+//       obj[key].email === email &&
+//       bcrypt.compareSync(password, hashedPassword)
+//     ) {
+//       return obj[key];
+//     }
+//   }
+//   return null;
+// };
 
-const getUrlByUser = function (userId) {
-  const userUrls = {};
-  for (const key in urlDatabase) {
-    if (urlDatabase[key].userId === userId) {
-      const { id, longURL, userId } = urlDatabase[key];
-      userUrls[key] = { id, longURL, userId };
-    }
-  }
-  if (userUrls !== {}) {
-    return userUrls
-  }
+// const getUrlByUser = function(userId,urlDatabase) {
+//   const userUrls = {};
+//   for (const key in urlDatabase) {
+//     if (urlDatabase[key].userId === userId) {
+//       const { id, longURL, userId } = urlDatabase[key];
+//       userUrls[key] = { id, longURL, userId };
+//     }
+//   }
+//   if (userUrls !== {}) {
+//     return userUrls;
+//   }
 
-  return null;
-
-};
+//   return null;
+// };
 
 // Create
 app.post("/urls", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.sendStatus(403);
   }
   const id = generateRandomString();
   const { longURL } = req.body;
-  urlDatabase[id] ={id, longURL, userId: req.cookies["user_id"]}
+  urlDatabase[id] = { id, longURL, userId: req.session.user_id };
   res.redirect(`/urls/${id}`);
 });
 
@@ -126,7 +134,7 @@ app.post("/urls/:id/edit", (req, res) => {
 
 //Register User Page
 app.get("/register", (req, res) => {
-  const id = req.cookies["user_id"];
+  const id = req.session.user_id;
   const templateVars = { user: userDatabase[id] };
   if (id) {
     return res.redirect("/urls");
@@ -137,7 +145,7 @@ app.get("/register", (req, res) => {
 // Collect New User Data
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
-  const hashedPassword = bcrypt.hashSync(password,10);
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (!email) {
     return res.sendStatus(400);
   }
@@ -150,15 +158,15 @@ app.post("/register", (req, res) => {
   }
 
   const id = generateRandomString();
-  userDatabase[id] = { id, email, password:hashedPassword };
+  userDatabase[id] = { id, email, password: hashedPassword };
   console.log(hashedPassword);
-  res.cookie("user_id", id);
+  req.session.user_id = id;
   res.redirect("/urls");
   res.json(userDatabase);
 });
 
 app.get("/urls/new", (req, res) => {
-  const id = req.cookies["user_id"];
+  const id = req.session.user_id;
   const currentUser = userDatabase[id];
   const templateVars = { user: currentUser };
   if (!id) {
@@ -169,7 +177,7 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
-  const userId = req.cookies["user_id"];
+  const userId = req.session.user_id;
   const templateVars = {
     id,
     user: urlDatabase[id],
@@ -187,7 +195,7 @@ app.get("/login", (req, res) => {
   const id = req.params.id;
   const templateVars = { user: userDatabase[id] };
   res.render("login", templateVars);
-  console.log(userDatabase)
+  console.log(userDatabase);
 });
 
 app.post("/login", (req, res) => {
@@ -196,27 +204,30 @@ app.post("/login", (req, res) => {
   if (!currentUser) {
     return res.redirect("/login");
   }
-  res.cookie("user_id", currentUser.id);
+  req.session.user_id = currentUser.id;
   res.redirect("/urls");
 });
 
 // Logout
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session.user_id = null;
   res.redirect("/urls");
 });
 
 app.get("/urls", (req, res) => {
   // console.log("username", req.cookies["username"]);
-  const id = req.cookies["user_id"];
+  const id = req.session.user_id;
   if (!id) {
-    return res.send("LOGIN OR REGISTER IF YOU DONT ALREADY HAVE AN ACCOUNT");
+    // <html><body>Hello <b>World</b></body></html>\n
+    // LOGIN OR REGISTER IF <a href ='/login'></a> YOU DONT ALREADY HAVE AN ACCOUNT
+
+    return res.send(" <html><body><a href='/login'>LOGIN</a> OR <a href='/register'>REGISTER</a> IF YOU DON NOT ALREADY HAVE AN ACCOUNT </body></html>\n");
   }
   if (!userDatabase) {
     return res.send("You have not created any URLs");
   }
   const templateVars = {
-    urls: getUrlByUser(id),
+    urls: getUrlByUser(id,urlDatabase),
     user: userDatabase[id],
   };
   res.render("urls_index", templateVars);
