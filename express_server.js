@@ -1,9 +1,13 @@
 const cookieSession = require("cookie-session");
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const {checkUser, authenticateUser, getUrlByUser, generateRandomString} = require("./helper");
-const {urlDatabase, userDatabase} = require("./databases")
-
+const {
+  checkUser,
+  authenticateUser,
+  getUrlByUser,
+  generateRandomString,
+} = require("./helper");
+const { urlDatabase, userDatabase } = require("./databases");
 
 const app = express();
 const PORT = 8081;
@@ -14,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cookieSession({
     name: "session",
-    keys: ['key1', 'key2'],
+    keys: ["key1", "key2"],
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
   })
 );
@@ -52,6 +56,9 @@ app.post("/urls/:id/edit", (req, res) => {
 app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
   const userId = req.session.user_id;
+  if (!Object.keys(urlDatabase).includes(id)) {
+    return res.status(400).send('<html><body><h2> Bad Request</h2></body></html>')
+  }
   const templateVars = {
     id,
     user: urlDatabase[id],
@@ -127,13 +134,15 @@ app.post("/urls/:id/delete", (req, res) => {
 app.get("/urls", (req, res) => {
   const id = req.session.user_id;
   if (!id) {
-    return res.send(" <html><body><a href='/login'>LOGIN</a> OR <a href='/register'>REGISTER</a> IF YOU DON NOT ALREADY HAVE AN ACCOUNT </body></html>\n");
+    return res.send(
+      " <html><body><a href='/login'>LOGIN</a> OR <a href='/register'>REGISTER</a> IF YOU DON NOT ALREADY HAVE AN ACCOUNT </body></html>\n"
+    );
   }
   if (!userDatabase) {
     return res.send("You have not created any URLs");
   }
   const templateVars = {
-    urls: getUrlByUser(id,urlDatabase),
+    urls: getUrlByUser(id, urlDatabase),
     user: userDatabase[id],
   };
   res.render("urls_index", templateVars);
@@ -150,24 +159,11 @@ app.get("/u/:id", (req, res) => {
   res.redirect(longURL);
 });
 
-
-
-
-
-
-
-
-
-
-
 // Renders the Root Page
 app.get("/", (req, res) => {
-  res.send("Hello!");
+  res.redirect("/urls");
 });
-
-
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
