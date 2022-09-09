@@ -22,6 +22,7 @@
     <%- include('partials/_header') %>
     <main style="margin: 1em;">
       <h3>Login</h3>
+      <p style="color:red ;"><%= error %> </p>
       <form class="form-inline" action="/login" method="POST" style="display: block;width: 300px;margin: auto;float: left;">
         <div class="form-group mb-2" >
           <label for="email">Email</label>

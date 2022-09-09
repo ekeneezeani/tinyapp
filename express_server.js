@@ -10,6 +10,7 @@ const {
 const { urlDatabase, userDatabase } = require("./databases");
 const { application } = require("express");
 
+let loginErrorMessage = '';
 const app = express();
 const PORT = 8081;
 
@@ -99,7 +100,6 @@ app.post("/register", (req, res) => {
 
   const id = generateRandomString();
   userDatabase[id] = { id, email, password: hashedPassword };
-  console.log(hashedPassword);
   req.session.user_id = id;
   res.redirect("/urls");
 });
@@ -119,6 +119,7 @@ app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const currentUser = authenticateUser(email, password, userDatabase);
   if (!currentUser) {
+    loginErrorMessage = 'Invalid Email or Password'
     return res.redirect("/login");
   }
   req.session.user_id = currentUser.id;
@@ -128,8 +129,9 @@ app.post("/login", (req, res) => {
 // Renders the Login Page
 app.get("/login", (req, res) => {
   const id = req.params.id;
-  const templateVars = { user: userDatabase[id] };
+  const templateVars = { user: userDatabase[id], error: loginErrorMessage };
   res.render("login", templateVars);
+  loginErrorMessage = '';
 });
 
 // Logout
