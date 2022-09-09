@@ -8,6 +8,7 @@ const {
   generateRandomString,
 } = require("./helper");
 const { urlDatabase, userDatabase } = require("./databases");
+const { application } = require("express");
 
 const app = express();
 const PORT = 8081;
@@ -57,8 +58,22 @@ app.get("/urls/:id", (req, res) => {
   const id = req.params.id;
   const userId = req.session.user_id;
   if (!Object.keys(urlDatabase).includes(id)) {
-    return res.status(400).send('<html><body><h2> Bad Request</h2></body></html>')
+    return res
+      .status(400)
+      .send("<html><body><h2> Bad Request</h2></body></html>");
   }
+  if (!userId) {
+    return res.redirect("/urls");
+  }
+
+  const urlCreatedByUser = getUrlByUser(userId,urlDatabase);
+
+  if (!urlCreatedByUser || !Object.keys(urlCreatedByUser).includes(id)) {
+    return res.send(
+      "<html><body><h2>You can not view this URL because you didn't create it</h2></body></html>"
+    );
+  }
+
   const templateVars = {
     id,
     user: urlDatabase[id],
@@ -151,9 +166,24 @@ app.get("/urls", (req, res) => {
 // Renders the long URL page
 app.get("/u/:id", (req, res) => {
   const id = req.params.id;
+  const userId = req.session.user_id;
   if (!Object.keys(urlDatabase).includes(id)) {
-    return res.sendStatus(400);
+    return res
+      .status(400)
+      .send("<html><body><h2> Bad Request</h2></body></html>");
   }
+  if (!userId) {
+    return res.redirect("/urls");
+  }
+
+  const urlCreatedByUser = getUrlByUser(userId,urlDatabase);
+
+  if (!urlCreatedByUser || !Object.keys(urlCreatedByUser).includes(id)) {
+    return res.send(
+      "<html><body><h2>You can not view this URL because you didn't create it</h2></body></html>"
+    );
+  }
+
   const longURL = urlDatabase[id].longURL;
 
   res.redirect(longURL);
