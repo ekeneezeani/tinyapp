@@ -3,7 +3,7 @@ const express = require("express");
 const { generateRandomString } = require("./generateRandomString");
 // const cookieParser = require("cookie-parser");
 const bcrypt = require("bcryptjs");
-const {checkUser, authenticateUser, getUrlByUser} = require("./helper")
+const {checkUser, authenticateUser, getUrlByUser} = require("./helper");
 
 
 const app = express();
@@ -55,42 +55,6 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
-// const checkUser = function (email, obj) {
-//   for (const key in obj) {
-//     if (obj[key].email === email) {
-//       return obj[key];
-//     }
-//   }
-//   return null;
-// };
-
-// const authenticateUser = function(email, password, obj) {
-//   for (const key in obj) {
-//     const hashedPassword = obj[key].password;
-//     if (
-//       obj[key].email === email &&
-//       bcrypt.compareSync(password, hashedPassword)
-//     ) {
-//       return obj[key];
-//     }
-//   }
-//   return null;
-// };
-
-// const getUrlByUser = function(userId,urlDatabase) {
-//   const userUrls = {};
-//   for (const key in urlDatabase) {
-//     if (urlDatabase[key].userId === userId) {
-//       const { id, longURL, userId } = urlDatabase[key];
-//       userUrls[key] = { id, longURL, userId };
-//     }
-//   }
-//   if (userUrls !== {}) {
-//     return userUrls;
-//   }
-
-//   return null;
-// };
 
 // Create
 app.post("/urls", (req, res) => {
@@ -186,11 +150,6 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-// app.get("/hello", (req, res) => {
-//   res.send("<html><body>Hello <b>World</b></body></html>\n");
-// });
-// Login Form
-
 app.get("/login", (req, res) => {
   const id = req.params.id;
   const templateVars = { user: userDatabase[id] };
@@ -210,14 +169,13 @@ app.post("/login", (req, res) => {
 
 // Logout
 app.post("/logout", (req, res) => {
-  req.session.user_id = null;
+  req.session = null;
   res.redirect("/urls");
 });
 
 app.get("/urls", (req, res) => {
   // console.log("username", req.cookies["username"]);
   const id = req.session.user_id;
-  console.log("Testing ID",id);
   if (!id) {
     return res.send(" <html><body><a href='/login'>LOGIN</a> OR <a href='/register'>REGISTER</a> IF YOU DON NOT ALREADY HAVE AN ACCOUNT </body></html>\n");
   }
