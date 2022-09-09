@@ -88,14 +88,14 @@ app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const hashedPassword = bcrypt.hashSync(password, 10);
   if (!email) {
-    return res.sendStatus(400);
+    return res.send('Email and Password cannot be blank');
   }
   if (!password) {
-    return res.sendStatus(400);
+    return res.send('Email and Password cannot be blank');
   }
 
   if (checkUser(email, userDatabase)) {
-    return res.sendStatus(400);
+    return res.send(('User already exist'));
   }
 
   const id = generateRandomString();
