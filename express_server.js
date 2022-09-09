@@ -19,12 +19,7 @@ app.use(
   })
 );
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
-
-// Create
+// Create a New Short URL
 app.post("/urls", (req, res) => {
   if (!req.session.user_id) {
     return res.sendStatus(403);
@@ -35,26 +30,15 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${id}`);
 });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
-
-app.get("/u/:id", (req, res) => {
-  const id = req.params.id;
-  if (!Object.keys(urlDatabase).includes(id)) {
-    return res.sendStatus(400);
+// Renders New Short URL Page
+app.get("/urls/new", (req, res) => {
+  const id = req.session.user_id;
+  const currentUser = userDatabase[id];
+  const templateVars = { user: currentUser };
+  if (!id) {
+    return res.redirect("/login");
   }
-  const longURL = urlDatabase[id].longURL;
-
-  res.redirect(longURL);
-});
-
-// Delete
-app.post("/urls/:id/delete", (req, res) => {
-  const id = req.params.id;
-  delete urlDatabase[id];
-  res.redirect("/urls");
-  // console.log(id);
+  res.render("urls_new", templateVars);
 });
 
 // Edit
@@ -64,17 +48,19 @@ app.post("/urls/:id/edit", (req, res) => {
   res.redirect("/urls");
 });
 
-//Register User Page
-app.get("/register", (req, res) => {
-  const id = req.session.user_id;
-  const templateVars = { user: userDatabase[id] };
-  if (id) {
-    return res.redirect("/urls");
-  }
-  res.render("user_registeration", templateVars);
+// Renders a URL created by User, to Edit
+app.get("/urls/:id", (req, res) => {
+  const id = req.params.id;
+  const userId = req.session.user_id;
+  const templateVars = {
+    id,
+    user: urlDatabase[id],
+  };
+
+  res.render("urls_show", templateVars);
 });
 
-// Collect New User Data
+// Register
 app.post("/register", (req, res) => {
   const { email, password } = req.body;
   const hashedPassword = bcrypt.hashSync(password, 10);
@@ -96,33 +82,17 @@ app.post("/register", (req, res) => {
   res.redirect("/urls");
 });
 
-app.get("/urls/new", (req, res) => {
+// Renders Register New User Page
+app.get("/register", (req, res) => {
   const id = req.session.user_id;
-  const currentUser = userDatabase[id];
-  const templateVars = { user: currentUser };
-  if (!id) {
-    return res.redirect("/login");
-  }
-  res.render("urls_new", templateVars);
-});
-
-app.get("/urls/:id", (req, res) => {
-  const id = req.params.id;
-  const userId = req.session.user_id;
-  const templateVars = {
-    id,
-    user: urlDatabase[id],
-  };
-
-  res.render("urls_show", templateVars);
-});
-
-app.get("/login", (req, res) => {
-  const id = req.params.id;
   const templateVars = { user: userDatabase[id] };
-  res.render("login", templateVars);
+  if (id) {
+    return res.redirect("/urls");
+  }
+  res.render("user_registeration", templateVars);
 });
 
+//Login
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
   const currentUser = authenticateUser(email, password, userDatabase);
@@ -133,14 +103,28 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
+// Renders the Login Page
+app.get("/login", (req, res) => {
+  const id = req.params.id;
+  const templateVars = { user: userDatabase[id] };
+  res.render("login", templateVars);
+});
+
 // Logout
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/urls");
 });
 
+// Delete
+app.post("/urls/:id/delete", (req, res) => {
+  const id = req.params.id;
+  delete urlDatabase[id];
+  res.redirect("/urls");
+});
+
+// Renders all URLs Created by User
 app.get("/urls", (req, res) => {
-  // console.log("username", req.cookies["username"]);
   const id = req.session.user_id;
   if (!id) {
     return res.send(" <html><body><a href='/login'>LOGIN</a> OR <a href='/register'>REGISTER</a> IF YOU DON NOT ALREADY HAVE AN ACCOUNT </body></html>\n");
@@ -155,6 +139,35 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
+// Renders the long URL page
+app.get("/u/:id", (req, res) => {
+  const id = req.params.id;
+  if (!Object.keys(urlDatabase).includes(id)) {
+    return res.sendStatus(400);
+  }
+  const longURL = urlDatabase[id].longURL;
+
+  res.redirect(longURL);
+});
+
+
+
+
+
+
+
+
+
+
+
+// Renders the Root Page
+app.get("/", (req, res) => {
+  res.send("Hello!");
+});
+
+
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
